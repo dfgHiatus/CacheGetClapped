@@ -79,7 +79,7 @@ namespace ModNameGoesHere
                     // Delete if the file hasn't been accessed in more than 3 days
                     if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
                     {
-                        // file.Delete();
+                        file.Delete();
                         CacheOldFileSize += file.Length;
                         CacheOldQuantity++;
                     }
@@ -94,7 +94,7 @@ namespace ModNameGoesHere
 
                     if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
                     {
-                        // file.Delete();
+                        file.Delete();
                         DataOldFileSize += file.Length;
                         DataOldQuantity++;
                     }
