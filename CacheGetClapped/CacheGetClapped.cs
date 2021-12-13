@@ -120,10 +120,10 @@ namespace ModNameGoesHere
                 Debug("Total number of files: " + CombinedFileQuantity);
                 Debug("Total size of both folders: " + BytesToString(CombinedFileSize));
                 Debug(string.Format("Total number of files over {0} days old: {1}",
-                    MaxDaysToKeep,
+                    MaxDaysToKeep * -1,
                     CombinedOldFileQuantity));
                 Debug(string.Format("Total size of files over {0} days old: {1}",
-                    MaxDaysToKeep,
+                    MaxDaysToKeep * -1,
                     BytesToString(CombinedOldFileSize)));
                 Debug("");
                 Debug(string.Format(
