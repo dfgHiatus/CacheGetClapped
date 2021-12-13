@@ -4,8 +4,6 @@ using FrooxEngine;
 using System.IO;
 using System;
 
-// -CachePath "F:\NeosDB\Cache" -DataPath "F:\NeosDB\Data"
-
 namespace ModNameGoesHere
 {
     public class CacheGetClapped : NeosMod
