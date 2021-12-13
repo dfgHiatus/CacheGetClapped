@@ -58,16 +58,16 @@ namespace ModNameGoesHere
                 }
 
                 // C:/Users/<Username>/AppData/LocalLow/Solirax/NeosVR if null
-                string DataPath = Engine.Current.DataPath + "/Assets";
-                if (Directory.Exists(DataPath))
-                {
-                    Debug("DataPath found at " + DataPath);
-                }
-                else
-                {
-                    Error("Could not find DataPath. Aborting");
-                    throw new DirectoryNotFoundException("Could not find DataPath. Aborting");
-                }
+                // string DataPath = Engine.Current.DataPath + "/Assets";
+                // if (Directory.Exists(DataPath))
+                // {
+                //     Debug("DataPath found at " + DataPath);
+                // }
+                // else
+                // {
+                //     Error("Could not find DataPath. Aborting");
+                //     throw new DirectoryNotFoundException("Could not find DataPath. Aborting");
+                // }
 
                 // Local
                 DirectoryInfo di_1 = new DirectoryInfo(CachePath);
@@ -86,19 +86,19 @@ namespace ModNameGoesHere
                 }
 
                 // LocalLow
-                DirectoryInfo di_2 = new DirectoryInfo(DataPath);
-                foreach (FileInfo file in di_2.EnumerateFiles())
-                {
-                    DataFileSize += file.Length;
-                    DataFileQuantity++;
-
-                    if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
-                    {
-                        file.Delete();
-                        DataOldFileSize += file.Length;
-                        DataOldQuantity++;
-                    }
-                }
+                // DirectoryInfo di_2 = new DirectoryInfo(DataPath);
+                // foreach (FileInfo file in di_2.EnumerateFiles())
+                // {
+                //      DataFileSize += file.Length;
+                //      DataFileQuantity++;
+                // 
+                //      if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
+                //      {
+                //           file.Delete();
+                //           DataOldFileSize += file.Length;
+                //           DataOldQuantity++;
+                //      }
+                // }
 
                 CombinedFileSize = CacheFileSize + DataFileSize;
                 CombinedOldFileSize = CacheOldFileSize + DataOldFileSize;
@@ -113,12 +113,13 @@ namespace ModNameGoesHere
                 Debug("Size of Neos cache folder: " + BytesToString(CacheFileSize));
                 Debug("");
                 Debug("DATA FOLDER INFO");
-                Debug("Number of unique data files: " + DataFileQuantity);
-                Debug("Size of Neos data folder: " + BytesToString(DataFileSize));
+                Debug("Data folder not considered during this process.");
+                // Debug("Number of unique data files: " + DataFileQuantity);
+                // Debug("Size of Neos data folder: " + BytesToString(DataFileSize));
                 Debug("");
                 Debug("TOTAL INFO:");
                 Debug("Total number of files: " + CombinedFileQuantity);
-                Debug("Total size of both folders: " + BytesToString(CombinedFileSize));
+                Debug("Total size of folders: " + BytesToString(CombinedFileSize));
                 Debug(string.Format("Total number of files over {0} days old: {1}",
                     MaxDaysToKeep * -1,
                     CombinedOldFileQuantity));
