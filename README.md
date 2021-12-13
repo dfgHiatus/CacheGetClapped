@@ -1,6 +1,7 @@
 # CacheGetClapped
 
 A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) 
+
 Smart cache management for NeosVR. Detects cached files that have been unused for 21 days, and promptly deletes them whenever the game is closed. This number can be easily altered to match your needs
 
 ## Installation
