@@ -42,7 +42,7 @@ namespace ModNameGoesHere
                 int CombinedFileQuantity = 0;
                 int CombinedOldFileQuantity = 0;
 
-                // Multply by negative 1 to get the Date Offset
+                // Multiply by negative 1 to get the Date Offset
                 MaxDaysToKeep *= -1;
 
                 // C:/Users/<Username>/AppData/Local/Temp/Solirax/NeosVR if null
