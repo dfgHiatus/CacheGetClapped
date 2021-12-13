@@ -25,7 +25,7 @@ namespace ModNameGoesHere
             // Should run before we run the rest of shutdown
             public static void Prefix()
             {
-                int MaxDaysToKeep = 3;
+                int MaxDaysToKeep = 21;
 
                 long CacheFileSize = 0;
                 long CacheOldFileSize = 0;
@@ -119,8 +119,12 @@ namespace ModNameGoesHere
                 Debug("TOTAL INFO:");
                 Debug("Total number of files: " + CombinedFileQuantity);
                 Debug("Total size of both folders: " + BytesToString(CombinedFileSize));
-                Debug("Total number of files over 3 days old: " + CombinedOldFileQuantity);
-                Debug("Total size of files over 3 days old: " + BytesToString(CombinedOldFileSize));
+                Debug(string.Format("Total number of files over {0} days old: {1}",
+                    MaxDaysToKeep,
+                    CombinedOldFileQuantity));
+                Debug(string.Format("Total size of files over {0} days old: {1}",
+                    MaxDaysToKeep,
+                    BytesToString(CombinedOldFileSize)));
                 Debug("");
                 Debug(string.Format(
                     "Deleted {0} or approximately {1}% of the Neos Cache successfully",
