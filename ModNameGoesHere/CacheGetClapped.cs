@@ -23,8 +23,8 @@ namespace ModNameGoesHere
         [HarmonyPatch(typeof(Engine), "Shutdown")]
         public class ShutdownPatch
         {
-            // public static bool Prefix()
-            public static void Postfix()
+            // Should run before we close the engine
+            public static void Prefix()
             {
                 long sizeDeleted = 0;
 
