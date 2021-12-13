@@ -1,5 +1,9 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModNameGoesHere", "ModNameGoesHere\ModNameGoesHere.csproj", "{0322B2EF-7452-479D-BAE2-FCAB75033337}"
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheGetClapped", "ModNameGoesHere\CacheGetClapped.csproj", "{0322B2EF-7452-479D-BAE2-FCAB75033337}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
