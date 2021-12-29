@@ -3,6 +3,7 @@ using NeosModLoader;
 using FrooxEngine;
 using System.IO;
 using System;
+using System.Linq;
 
 namespace ModNameGoesHere
 {
@@ -10,7 +11,7 @@ namespace ModNameGoesHere
     {
         public override string Name => "CacheGetClapped";
         public override string Author => "dfgHiatus";
-        public override string Version => "1.0.0";
+        public override string Version => "1.0.1";
         public override string Link => "https://github.com/dfgHiatus/CacheGetClapped/";
 
         public override void OnEngineInit()
@@ -22,28 +23,14 @@ namespace ModNameGoesHere
         [HarmonyPatch(typeof(Engine), "Shutdown")]
         public class ShutdownPatch
         {
-            // Should run before we run the rest of shutdown
             public static void Prefix()
             {
+                // TODO: Expose MaxDaysToKeep as setting
                 int MaxDaysToKeep = 21;
-
-                long CacheFileSize = 0;
-                long CacheOldFileSize = 0;
                 int CacheFileQuantity = 0;
                 int CacheOldQuantity = 0;
-
-                long DataFileSize = 0;
-                long DataOldFileSize = 0;
-                int DataFileQuantity = 0;
-                int DataOldQuantity = 0;
-
-                long CombinedFileSize = 0;
-                long CombinedOldFileSize = 0;
-                int CombinedFileQuantity = 0;
-                int CombinedOldFileQuantity = 0;
-
-                // Multiply by negative 1 to get the Date Offset
-                MaxDaysToKeep *= -1;
+                long CacheFileSize = 0;
+                long CacheOldFileSize = 0;
 
                 // C:/Users/<Username>/AppData/Local/Temp/Solirax/NeosVR if null
                 string CachePath = Engine.Current.CachePath + "/Cache";
@@ -57,27 +44,16 @@ namespace ModNameGoesHere
                     throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
                 }
 
-                // C:/Users/<Username>/AppData/LocalLow/Solirax/NeosVR if null
-                // string DataPath = Engine.Current.DataPath + "/Assets";
-                // if (Directory.Exists(DataPath))
-                // {
-                //     Debug("DataPath found at " + DataPath);
-                // }
-                // else
-                // {
-                //     Error("Could not find DataPath. Aborting");
-                //     throw new DirectoryNotFoundException("Could not find DataPath. Aborting");
-                // }
+                DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
+                DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
+                                                 .LastAccessTime.AddDays(MaxDaysToKeep *= -1);
 
-                // Local
-                DirectoryInfo di_1 = new DirectoryInfo(CachePath);
-                foreach (FileInfo file in di_1.EnumerateFiles()) // Only files, no dirs
+                foreach (FileInfo file in CacheDirectory.EnumerateFiles())
                 {
                     CacheFileSize += file.Length;
                     CacheFileQuantity++;
 
-                    // Delete if the file hasn't been accessed in more than 3 days
-                    if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
+                    if (file.LastAccessTime < NewestCachedFileAccessTime)
                     {
                         file.Delete();
                         CacheOldFileSize += file.Length;
@@ -85,53 +61,18 @@ namespace ModNameGoesHere
                     }
                 }
 
-                // LocalLow
-                // DirectoryInfo di_2 = new DirectoryInfo(DataPath);
-                // foreach (FileInfo file in di_2.EnumerateFiles())
-                // {
-                //      DataFileSize += file.Length;
-                //      DataFileQuantity++;
-                // 
-                //      if (file.LastAccessTime < DateTime.Now.AddDays(MaxDaysToKeep))
-                //      {
-                //           file.Delete();
-                //           DataOldFileSize += file.Length;
-                //           DataOldQuantity++;
-                //      }
-                // }
-
-                CombinedFileSize = CacheFileSize + DataFileSize;
-                CombinedOldFileSize = CacheOldFileSize + DataOldFileSize;
-                CombinedFileQuantity = CacheFileQuantity + DataFileQuantity;
-                CombinedOldFileQuantity = CacheOldQuantity + DataOldQuantity;
-
                 Debug("");
                 Debug("BEGIN CACHE-GET-CLAPPED DIAGNOSTICS:");
                 Debug("");
                 Debug("CACHE FOLDER INFO:");
-                Debug("Number of unique cache files: " + CacheFileQuantity);
+                Debug("Number of unique cached files: " + CacheFileQuantity);
                 Debug("Size of Neos cache folder: " + BytesToString(CacheFileSize));
                 Debug("");
-                Debug("DATA FOLDER INFO");
-                Debug("Data folder not considered during this process.");
-                // Debug("Number of unique data files: " + DataFileQuantity);
-                // Debug("Size of Neos data folder: " + BytesToString(DataFileSize));
-                Debug("");
-                Debug("TOTAL INFO:");
-                Debug("Total number of files: " + CombinedFileQuantity);
-                Debug("Total size of folders: " + BytesToString(CombinedFileSize));
-                Debug(string.Format("Total number of files over {0} days old: {1}",
-                    MaxDaysToKeep * -1,
-                    CombinedOldFileQuantity));
-                Debug(string.Format("Total size of files over {0} days old: {1}",
-                    MaxDaysToKeep * -1,
-                    BytesToString(CombinedOldFileSize)));
-                Debug("");
                 Debug(string.Format(
-                    "Deleted {0} or approximately {1}% of the Neos Cache successfully",
-                    BytesToString(CombinedOldFileSize),
-                    Ratio(CombinedOldFileQuantity, CombinedFileQuantity)));
-                Debug("Neos Cache is now " + BytesToString(CombinedFileSize - CombinedOldFileSize));
+                    "Deleted {0} files or approximately {1}% of the Neos Cache successfully",
+                    BytesToString(CacheOldFileSize),
+                    Ratio(CacheOldQuantity, CacheOldQuantity)));
+                Debug("Neos Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
                 Debug("");
                 Debug("END DIAGNOSTICS");
                 Debug("");
@@ -139,7 +80,8 @@ namespace ModNameGoesHere
 
             public static string BytesToString(long byteCount)
             {
-                string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+                //Longs run out around EB
+                string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; 
                 if (byteCount == 0)
                     return "0" + suf[0];
                 long bytes = Math.Abs(byteCount);
