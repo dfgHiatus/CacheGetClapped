@@ -5,7 +5,7 @@ using System.IO;
 using System;
 using System.Linq;
 
-namespace ModNameGoesHere
+namespace CacheGetClappedMod
 {
     public class CacheGetClapped : NeosMod
     {
@@ -28,7 +28,7 @@ namespace ModNameGoesHere
                 // TODO: Expose MaxDaysToKeep as setting
                 int MaxDaysToKeep = 21;
                 int CacheFileQuantity = 0;
-                int CacheOldQuantity = 0;
+                int CacheOldFileQuantity = 0;
                 long CacheFileSize = 0;
                 long CacheOldFileSize = 0;
 
@@ -46,7 +46,7 @@ namespace ModNameGoesHere
 
                 DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
                 DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
-                                                 .LastAccessTime.AddDays(MaxDaysToKeep *= -1);
+                                                     .LastAccessTime.AddDays(MaxDaysToKeep *= -1);
 
                 foreach (FileInfo file in CacheDirectory.EnumerateFiles())
                 {
@@ -54,10 +54,10 @@ namespace ModNameGoesHere
                     CacheFileQuantity++;
 
                     if (file.LastAccessTime < NewestCachedFileAccessTime)
-                    {
-                        file.Delete();
+                    { 
                         CacheOldFileSize += file.Length;
-                        CacheOldQuantity++;
+                        CacheOldFileQuantity++;
+                        file.Delete();
                     }
                 }
 
@@ -71,7 +71,7 @@ namespace ModNameGoesHere
                 Debug(string.Format(
                     "Deleted {0} files or approximately {1}% of the Neos Cache successfully",
                     BytesToString(CacheOldFileSize),
-                    Ratio(CacheOldQuantity, CacheOldQuantity)));
+                    Ratio(CacheOldFileQuantity, CacheOldFileQuantity)));
                 Debug("Neos Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
                 Debug("");
                 Debug("END DIAGNOSTICS");
@@ -92,7 +92,7 @@ namespace ModNameGoesHere
 
             public static string Ratio(long old, long total)
             {
-                return (1.0f * old / total).ToString();
+                return float.IsNaN(1.0f * old / total) ? "0" : (1.0f * old / total).ToString();
             }
         }
     }
