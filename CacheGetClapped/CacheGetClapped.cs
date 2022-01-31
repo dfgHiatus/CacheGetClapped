@@ -9,13 +9,18 @@ namespace CacheGetClappedMod
 {
     public class CacheGetClapped : NeosMod
     {
+        [AutoRegisterConfigKey]
+        public static ModConfigurationKey<int> MAX_DAYS_KEY = new ModConfigurationKey<int>("max_days_to_keep", "Maximum days to keep cached files", () => 21);
+        public static ModConfiguration config;
+
         public override string Name => "CacheGetClapped";
         public override string Author => "dfgHiatus";
-        public override string Version => "1.0.1";
+        public override string Version => "1.0.2";
         public override string Link => "https://github.com/dfgHiatus/CacheGetClapped/";
 
         public override void OnEngineInit()
         {
+            config = GetConfiguration();
             Harmony harmony = new Harmony("net.dfgHiatus.CacheGetClapped");
             harmony.PatchAll();
         }
@@ -26,7 +31,6 @@ namespace CacheGetClappedMod
             public static void Prefix()
             {
                 // TODO: Expose MaxDaysToKeep as setting
-                int MaxDaysToKeep = 21;
                 int CacheFileQuantity = 0;
                 int CacheOldFileQuantity = 0;
                 long CacheFileSize = 0;
@@ -44,9 +48,11 @@ namespace CacheGetClappedMod
                     throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
                 }
 
+                int configTime = config.GetValue(MAX_DAYS_KEY);
+                configTime *= -1;
                 DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
                 DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
-                                                     .LastAccessTime.AddDays(MaxDaysToKeep *= -1);
+                                                     .LastAccessTime.AddDays(configTime);
 
                 foreach (FileInfo file in CacheDirectory.EnumerateFiles())
                 {
