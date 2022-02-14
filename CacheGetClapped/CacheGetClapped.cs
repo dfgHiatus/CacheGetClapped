@@ -77,7 +77,7 @@ namespace CacheGetClappedMod
                 Debug(string.Format(
                     "Deleted {0} files or approximately {1}% of the Neos Cache successfully",
                     BytesToString(CacheOldFileSize),
-                    Ratio(CacheOldFileQuantity, CacheOldFileQuantity)));
+                    Ratio(CacheOldFileQuantity, CacheFileQuantity)));
                 Debug("Neos Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
                 Debug("");
                 Debug("END DIAGNOSTICS");
