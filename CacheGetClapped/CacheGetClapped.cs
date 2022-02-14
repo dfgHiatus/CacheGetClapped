@@ -84,6 +84,7 @@ namespace CacheGetClappedMod
                 Debug("");
             }
 
+	    // https://stackoverflow.com/questions/281640/how-do-i-get-a-human-readable-file-size-in-bytes-abbreviation-using-net
             public static string BytesToString(long byteCount)
             {
                 //Longs run out around EB
