@@ -11,11 +11,15 @@ namespace CacheGetClappedMod
     {
         [AutoRegisterConfigKey]
         public static ModConfigurationKey<int> MAX_DAYS_KEY = new ModConfigurationKey<int>("max_days_to_keep", "Maximum days to keep cached files", () => 21);
+
+        [AutoRegisterConfigKey]
+        public static ModConfigurationKey<bool> IS_ENABLED = new ModConfigurationKey<bool>("is_enabled", "A toggle for the user, if the mod should run", () => true);
+
         public static ModConfiguration config;
 
         public override string Name => "CacheGetClapped";
         public override string Author => "dfgHiatus";
-        public override string Version => "1.0.2";
+        public override string Version => "1.0.3";
         public override string Link => "https://github.com/dfgHiatus/CacheGetClapped/";
 
         public override void OnEngineInit()
@@ -30,6 +34,11 @@ namespace CacheGetClappedMod
         {
             public static void Prefix()
             {
+                if (!config.GetValue(IS_ENABLED))
+                {
+                    return;
+                }
+
                 // TODO: Expose MaxDaysToKeep as setting
                 int CacheFileQuantity = 0;
                 int CacheOldFileQuantity = 0;
