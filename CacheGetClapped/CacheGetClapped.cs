@@ -86,13 +86,14 @@ namespace CacheGetClappedMod
                 Debug(string.Format(
                     "Deleted {0} files or approximately {1}% of the Neos Cache successfully",
                     BytesToString(CacheOldFileSize),
-                    Ratio(CacheOldFileQuantity, CacheOldFileQuantity)));
+                    Ratio(CacheOldFileQuantity, CacheFileQuantity)));
                 Debug("Neos Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
                 Debug("");
                 Debug("END DIAGNOSTICS");
                 Debug("");
             }
 
+	    // https://stackoverflow.com/questions/281640/how-do-i-get-a-human-readable-file-size-in-bytes-abbreviation-using-net
             public static string BytesToString(long byteCount)
             {
                 //Longs run out around EB
