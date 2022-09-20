@@ -4,6 +4,8 @@ using FrooxEngine;
 using System.IO;
 using System;
 using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace CacheGetClappedMod
 {
@@ -15,11 +17,17 @@ namespace CacheGetClappedMod
         [AutoRegisterConfigKey]
         public static ModConfigurationKey<bool> IS_ENABLED = new ModConfigurationKey<bool>("is_enabled", "A toggle for the user, if the mod should run", () => true);
 
+        [AutoRegisterConfigKey]
+        public static ModConfigurationKey<int> MAX_SIZE_KEY = new ModConfigurationKey<int>("max_size_of_cache", "The maximum size of the cache in MB, before the oldest cache files are removed", () => -1);
+
+        [AutoRegisterConfigKey]
+        public static ModConfigurationKey<int> TARGET_SIZE_KEY = new ModConfigurationKey<int>("target_size_of_cache", "The new target size of the cache in MB, after the maximum size has been exceeded", () => -1);
+
         public static ModConfiguration config;
 
         public override string Name => "CacheGetClapped";
         public override string Author => "dfgHiatus";
-        public override string Version => "1.0.3";
+        public override string Version => "1.0.4";
         public override string Link => "https://github.com/dfgHiatus/CacheGetClapped/";
 
         public override void OnEngineInit()
@@ -76,6 +84,24 @@ namespace CacheGetClappedMod
                     }
                 }
 
+                long MaxSize = config.GetValue(MAX_SIZE_KEY) * 1000000;
+                long TargetSize = config.GetValue(TARGET_SIZE_KEY) * 1000000;
+                bool shouldDoSizeCleanup = MaxSize > 0 && TargetSize > 0;
+
+                if (CacheFileSize - CacheOldFileSize > MaxSize && shouldDoSizeCleanup)
+                {
+                    var files = CacheDirectory.GetFiles().OrderBy(f => f.LastWriteTime);
+                    foreach (FileInfo file in files)
+                    {
+                        CacheOldFileSize += file.Length;
+                        CacheOldFileQuantity++;
+                        file.Delete();
+
+                        if (CacheFileSize - CacheOldFileSize < TargetSize)
+                            break;
+                    }
+                }
+
                 Debug("");
                 Debug("BEGIN CACHE-GET-CLAPPED DIAGNOSTICS:");
                 Debug("");
@@ -93,7 +119,7 @@ namespace CacheGetClappedMod
                 Debug("");
             }
 
-	    // https://stackoverflow.com/questions/281640/how-do-i-get-a-human-readable-file-size-in-bytes-abbreviation-using-net
+	        // https://stackoverflow.com/questions/281640/how-do-i-get-a-human-readable-file-size-in-bytes-abbreviation-using-net
             public static string BytesToString(long byteCount)
             {
                 //Longs run out around EB
