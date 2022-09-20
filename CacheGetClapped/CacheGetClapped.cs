@@ -18,10 +18,7 @@ namespace CacheGetClappedMod
         public static ModConfigurationKey<bool> IS_ENABLED = new ModConfigurationKey<bool>("is_enabled", "A toggle for the user, if the mod should run", () => true);
 
         [AutoRegisterConfigKey]
-        public static ModConfigurationKey<int> MAX_SIZE_KEY = new ModConfigurationKey<int>("max_size_of_cache", "The maximum size of the cache in MB, before the oldest cache files are removed", () => -1);
-
-        [AutoRegisterConfigKey]
-        public static ModConfigurationKey<int> TARGET_SIZE_KEY = new ModConfigurationKey<int>("target_size_of_cache", "The new target size of the cache in MB, after the maximum size has been exceeded", () => -1);
+        public static ModConfigurationKey<float> MAX_SIZE_KEY = new ModConfigurationKey<float>("max_size_of_cache", "Maximum size of the cache in GB, before triggering cleanup", () => -1f);
 
         public static ModConfiguration config;
 
@@ -84,9 +81,8 @@ namespace CacheGetClappedMod
                     }
                 }
 
-                long MaxSize = config.GetValue(MAX_SIZE_KEY) * 1000000;
-                long TargetSize = config.GetValue(TARGET_SIZE_KEY) * 1000000;
-                bool shouldDoSizeCleanup = MaxSize > 0 && TargetSize > 0;
+                long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1000000000);
+                bool shouldDoSizeCleanup = MaxSize > 0;
 
                 if (CacheFileSize - CacheOldFileSize > MaxSize && shouldDoSizeCleanup)
                 {
@@ -97,7 +93,7 @@ namespace CacheGetClappedMod
                         CacheOldFileQuantity++;
                         file.Delete();
 
-                        if (CacheFileSize - CacheOldFileSize < TargetSize)
+                        if (CacheFileSize - CacheOldFileSize < MaxSize)
                             break;
                     }
                 }
