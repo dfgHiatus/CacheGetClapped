@@ -4,8 +4,6 @@ using FrooxEngine;
 using System.IO;
 using System;
 using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -64,21 +62,25 @@ namespace CacheGetClappedMod
                 }
 
                 float configTime = config.GetValue(MAX_DAYS_KEY);
-                bool shouldDoDayCleanup = configTime >= 0;
+                long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
 
-                configTime *= -1;
-                DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
-                DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
-                                                     .LastAccessTime.AddDays(configTime);
+                DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);
 
-                if (shouldDoDayCleanup)
+                // Get directory size and file count
+                _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                 {
+                    Interlocked.Add(ref CacheFileSize, file.Length);
+                    Interlocked.Increment(ref CacheFileQuantity);
+                });
+
+
+                // Cache file cleanup by file age threshold
+                if (configTime >= 0)
+                {
+                    DateTime DateThreshold = DateTime.Now.AddDays(configTime * -1f);
                     _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                     {
-                        Interlocked.Add(ref CacheFileSize, file.Length);
-                        Interlocked.Increment(ref CacheFileQuantity);
-
-                        if (file.LastAccessTime < NewestCachedFileAccessTime)
+                        if (file.LastAccessTime < DateThreshold)
                         {
                             Interlocked.Add(ref CacheOldFileSize, file.Length);
                             Interlocked.Increment(ref CacheOldFileQuantity);
@@ -86,21 +88,18 @@ namespace CacheGetClappedMod
                         }
                     });
                 }
-                
-                long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
-                bool shouldDoSizeCleanup = MaxSize >= 0;
 
-                if (CacheFileSize - CacheOldFileSize > MaxSize && shouldDoSizeCleanup)
+                // Cache file cleanup by total size threshold
+                if (MaxSize >= 0)
                 {
                     var files = CacheDirectory.GetFiles().OrderBy(f => f.LastWriteTime);
                     foreach (FileInfo file in files)
                     {
+                        if (CacheFileSize - CacheOldFileSize < MaxSize)
+                            break;
                         CacheOldFileSize += file.Length;
                         CacheOldFileQuantity++;
                         file.Delete();
-
-                        if (CacheFileSize - CacheOldFileSize < MaxSize)
-                            break;
                     }
                 }
 
