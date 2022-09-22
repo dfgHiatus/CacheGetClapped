@@ -2,7 +2,7 @@
 
 A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) 
 
-Smart cache management for NeosVR. Detects cached files that have been unused for a specified number of days, and promptly deletes them whenever the game is closed. This number can be easily altered to match your needs.
+Smart cache management for NeosVR. Detects cached files that have been unused for a specified number of days, and promptly deletes them whenever the game is closed. Also allows a maximum cache size to be specified, automatically cleaning up unused cache files. These numbers can be easily altered to match your needs.
 
 PLEASE UNDERSTAND THAT ANY MOD, PROGRAM, OR APPLICATION THAT DELETES FILES HAS THE RISK OF REMOVING THE WRONG INFORMATION. THOUGH I HAVE TESTED THIS NUMEROUS TIMES, I CANNOT GUARANTEE ON DIFFERENT DEVICES THIS WILL WORK AS INTENDED. USE AT YOUR OWN RISK
 
