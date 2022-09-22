@@ -20,7 +20,7 @@ namespace CacheGetClappedMod
         public static ModConfigurationKey<int> MAX_DAYS_KEY = new ModConfigurationKey<int>("max_days_to_keep", "Maximum number of days to keep cached files", () => 21);
 
         [AutoRegisterConfigKey]
-        public static ModConfigurationKey<float> MAX_SIZE_KEY = new ModConfigurationKey<float>("max_size_of_cache", "Maximum size of the cache in gigabytes (GB) before triggering a cleanup", () => -1f);
+        public static ModConfigurationKey<float> MAX_SIZE_KEY = new ModConfigurationKey<float>("max_size_of_cache", "Maximum size of the cache in gigabytes (GB) before triggering a cleanup", () => 100);
 
         public static ModConfiguration config;
 
@@ -69,6 +69,7 @@ namespace CacheGetClappedMod
                 DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
                                                      .LastAccessTime.AddDays(configTime);
 
+                // 1) Remove all files over the time limit
                 _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                 {
                     Interlocked.Add(ref CacheFileSize, file.Length);
@@ -81,7 +82,9 @@ namespace CacheGetClappedMod
                         file.Delete();
                     }
                 });
-                
+
+                // 2) If the size of the cache is still too large, keep trimming until we're good
+                // - We can't parallelize this as the logic depends on previous iterations to work
                 long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
                 bool shouldDoSizeCleanup = MaxSize > 0;
 
