@@ -17,7 +17,7 @@ namespace CacheGetClappedMod
         public static ModConfigurationKey<bool> IS_ENABLED = new ModConfigurationKey<bool>("is_enabled", "Enabled (Will run on close if true)", () => true);
 
         [AutoRegisterConfigKey]
-        public static ModConfigurationKey<int> MAX_DAYS_KEY = new ModConfigurationKey<int>("max_days_to_keep", "Maximum number of days to keep cached files", () => 21);
+        public static ModConfigurationKey<float> MAX_DAYS_KEY = new ModConfigurationKey<float>("max_days_to_keep", "Maximum number of days to keep cached files", () => 21f);
 
         [AutoRegisterConfigKey]
         public static ModConfigurationKey<float> MAX_SIZE_KEY = new ModConfigurationKey<float>("max_size_of_cache", "Maximum size of the cache in gigabytes (GB) before triggering a cleanup", () => -1f);
@@ -63,27 +63,32 @@ namespace CacheGetClappedMod
                     throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
                 }
 
-                int configTime = config.GetValue(MAX_DAYS_KEY);
+                float configTime = config.GetValue(MAX_DAYS_KEY);
+                bool shouldDoDayCleanup = configTime >= 0;
+
                 configTime *= -1;
                 DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
                 DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
                                                      .LastAccessTime.AddDays(configTime);
 
-                _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
+                if (shouldDoDayCleanup)
                 {
-                    Interlocked.Add(ref CacheFileSize, file.Length);
-                    Interlocked.Increment(ref CacheFileQuantity);
-
-                    if (file.LastAccessTime < NewestCachedFileAccessTime)
+                    _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                     {
-                        Interlocked.Add(ref CacheOldFileSize, file.Length);
-                        Interlocked.Increment(ref CacheOldFileQuantity);
-                        file.Delete();
-                    }
-                });
+                        Interlocked.Add(ref CacheFileSize, file.Length);
+                        Interlocked.Increment(ref CacheFileQuantity);
+
+                        if (file.LastAccessTime < NewestCachedFileAccessTime)
+                        {
+                            Interlocked.Add(ref CacheOldFileSize, file.Length);
+                            Interlocked.Increment(ref CacheOldFileQuantity);
+                            file.Delete();
+                        }
+                    });
+                }
                 
                 long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
-                bool shouldDoSizeCleanup = MaxSize > 0;
+                bool shouldDoSizeCleanup = MaxSize >= 0;
 
                 if (CacheFileSize - CacheOldFileSize > MaxSize && shouldDoSizeCleanup)
                 {
