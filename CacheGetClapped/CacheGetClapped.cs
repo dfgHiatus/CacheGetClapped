@@ -4,8 +4,6 @@ using FrooxEngine;
 using System.IO;
 using System;
 using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -17,7 +15,7 @@ namespace CacheGetClappedMod
         public static ModConfigurationKey<bool> IS_ENABLED = new ModConfigurationKey<bool>("is_enabled", "Enabled (Will run on close if true)", () => true);
 
         [AutoRegisterConfigKey]
-        public static ModConfigurationKey<int> MAX_DAYS_KEY = new ModConfigurationKey<int>("max_days_to_keep", "Maximum number of days to keep cached files", () => 21);
+        public static ModConfigurationKey<float> MAX_DAYS_KEY = new ModConfigurationKey<float>("max_days_to_keep", "Maximum number of days to keep cached files", () => 21f);
 
         [AutoRegisterConfigKey]
         public static ModConfigurationKey<float> MAX_SIZE_KEY = new ModConfigurationKey<float>("max_size_of_cache", "Maximum size of the cache in gigabytes (GB) before triggering a cleanup", () => -1f);
@@ -63,39 +61,45 @@ namespace CacheGetClappedMod
                     throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
                 }
 
-                int configTime = config.GetValue(MAX_DAYS_KEY);
-                configTime *= -1;
-                DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);  
-                DateTime NewestCachedFileAccessTime = CacheDirectory.GetFiles().OrderByDescending(f => f.LastWriteTime).First()
-                                                     .LastAccessTime.AddDays(configTime);
+                float configTime = config.GetValue(MAX_DAYS_KEY);
+                long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
 
+                DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);
+
+                // Get directory size and file count
                 _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                 {
                     Interlocked.Add(ref CacheFileSize, file.Length);
                     Interlocked.Increment(ref CacheFileQuantity);
-
-                    if (file.LastAccessTime < NewestCachedFileAccessTime)
-                    {
-                        Interlocked.Add(ref CacheOldFileSize, file.Length);
-                        Interlocked.Increment(ref CacheOldFileQuantity);
-                        file.Delete();
-                    }
                 });
-                
-                long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
-                bool shouldDoSizeCleanup = MaxSize > 0;
 
-                if (CacheFileSize - CacheOldFileSize > MaxSize && shouldDoSizeCleanup)
+
+                // Cache file cleanup by file age threshold
+                if (configTime >= 0)
+                {
+                    DateTime DateThreshold = DateTime.Now.AddDays(configTime * -1f);
+                    _ = Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
+                    {
+                        if (file.LastAccessTime < DateThreshold)
+                        {
+                            Interlocked.Add(ref CacheOldFileSize, file.Length);
+                            Interlocked.Increment(ref CacheOldFileQuantity);
+                            file.Delete();
+                        }
+                    });
+                }
+
+                // Cache file cleanup by total size threshold
+                if (MaxSize >= 0)
                 {
                     var files = CacheDirectory.GetFiles().OrderBy(f => f.LastWriteTime);
                     foreach (FileInfo file in files)
                     {
+                        if (CacheFileSize - CacheOldFileSize < MaxSize)
+                            break;
                         CacheOldFileSize += file.Length;
                         CacheOldFileQuantity++;
                         file.Delete();
-
-                        if (CacheFileSize - CacheOldFileSize < MaxSize)
-                            break;
                     }
                 }
 
