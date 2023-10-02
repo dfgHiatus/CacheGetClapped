@@ -12,7 +12,7 @@ public class CacheGetClapped : ResoniteMod
 {
     [AutoRegisterConfigKey]
     public readonly static ModConfigurationKey<bool> IS_ENABLED = 
-        new("is_enabled", "Enabled (Will run on close if true)", () => true);
+        new("is_enabled", "Run on close", () => true);
 
     [AutoRegisterConfigKey]
     public readonly static ModConfigurationKey<float> MAX_DAYS_KEY = 
@@ -20,7 +20,7 @@ public class CacheGetClapped : ResoniteMod
 
     [AutoRegisterConfigKey]
     public readonly static ModConfigurationKey<float> MAX_SIZE_KEY = 
-        new("max_size_of_cache", "Maximum size of the cache in gigabytes (GB) before triggering a cleanup", () => -1f);
+        new("max_size_of_cache", "(Optional) Maximum cache size in gigabytes (GB). Leave at -1 to disable", () => -1f);
 
     public static ModConfiguration config;
     private static readonly string CachePath = Path.Combine(Engine.Current.CachePath, "Cache");
