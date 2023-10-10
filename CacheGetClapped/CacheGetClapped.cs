@@ -113,7 +113,7 @@ public class CacheGetClapped : ResoniteMod
         Debug("");
         Debug("CACHE FOLDER INFO:");
         Debug($"Number of unique cached files: {CacheFileQuantity}");
-        Debug($"Size of Neos cache folder: {bTs}");
+        Debug($"Size of Resonite cache folder: {bTs}");
         Debug("");
         Debug($"Deleted {bTs} files or approximately {Ratio(CacheOldFileQuantity, CacheFileQuantity)}% of the Resonite Cache successfully");
         Debug("Resonite Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));

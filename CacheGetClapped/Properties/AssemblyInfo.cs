@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CacheGetClapped")]
-[assembly: AssemblyDescription("Empties the NeosVR cache folder upon exit.")]
+[assembly: AssemblyDescription("Empties the Resonite cache folder upon exit.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Hiatus Labs")]
 [assembly: AssemblyProduct("CacheGetClapped")]
