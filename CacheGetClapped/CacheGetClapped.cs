@@ -38,88 +38,117 @@ public class CacheGetClapped : ResoniteMod
 		
     private static void OnShutdown()
     {
-        if (!config.GetValue(IS_ENABLED)) return;
-
-        if (!Directory.Exists(CachePath))
-            throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
-
-        Debug($"CachePath found at {CachePath}");
-        int CacheFileQuantity = 0;
-        int CacheOldFileQuantity = 0;
-        long CacheFileSize = 0;
-        long CacheOldFileSize = 0;
-
-        float configTime = config.GetValue(MAX_DAYS_KEY);
-        long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
-
-        DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);
-
-        /* --- Get directory size and file count ---
-        * Order does not matter, so we can parallelize this operation
-        * (Provided we interlock CacheFileSize/CacheFileQuantity)
-        */
-        Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
+        try
         {
-            Interlocked.Add(ref CacheFileSize, file.Length);
-            Interlocked.Increment(ref CacheFileQuantity);
-        });
+            if (!config.GetValue(IS_ENABLED)) 
+                return;
 
-        /* --- Cache file cleanup by file age ---
-        * The order of the files deleted here does not matter as well,
-        * so we can parallelize this operation too. Parallel.ForEach
-        * *should* be safe for concurrent file deletions, at least
-        * according to MSDN/StackOverflow. My tests corroborate this,
-        * though part of me remains skeptical.
-        * Don't forget to interlock CacheOldFileSize/CacheOldFileQuantity!
-        */
-        if (configTime >= 0)
-        {
-            DateTime DateThreshold = DateTime.Now.AddDays(configTime * -1f);
+            if (!Directory.Exists(CachePath))
+                throw new DirectoryNotFoundException("Could not find CachePath. Aborting");
+
+            Debug($"CachePath found at {CachePath}");
+            int CacheFileQuantity = 0;
+            int CacheOldFileQuantity = 0;
+            long CacheFileSize = 0;
+            long CacheOldFileSize = 0;
+
+            float configTime = config.GetValue(MAX_DAYS_KEY);
+            long MaxSize = (long)(config.GetValue(MAX_SIZE_KEY) * 1_000_000_000);
+
+            DirectoryInfo CacheDirectory = new DirectoryInfo(CachePath);
+
+            /* --- Get directory size and file count ---
+            * Order does not matter, so we can parallelize this operation
+            * (Provided we interlock CacheFileSize/CacheFileQuantity)
+            */
             Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
             {
-                if (file.LastAccessTime < DateThreshold)
+                Interlocked.Add(ref CacheFileSize, file.Length);
+                Interlocked.Increment(ref CacheFileQuantity);
+            });
+
+            /* --- Cache file cleanup by file age ---
+            * The order of the files deleted here does not matter as well,
+            * so we can parallelize this operation too. Parallel.ForEach
+            * *should* be safe for concurrent file deletions, at least
+            * according to MSDN/StackOverflow. My tests corroborate this,
+            * though part of me remains skeptical.
+            * Don't forget to interlock CacheOldFileSize/CacheOldFileQuantity!
+            */
+            if (configTime >= 0)
+            {
+                DateTime DateThreshold = DateTime.Now.AddDays(configTime * -1f);
+                Parallel.ForEach(CacheDirectory.EnumerateFiles(), (FileInfo file) =>
                 {
+                    if (file.LastAccessTime >= DateThreshold)
+                        return;
+                    
                     Interlocked.Add(ref CacheOldFileSize, file.Length);
                     Interlocked.Increment(ref CacheOldFileQuantity);
-                    file.Delete();
-                }
-            });
-        }
-
-        /* --- Cache file cleanup by total size threshold ---
-         * If the user has specified a maximum cache size AND
-         * the above operation did not already delete enough files,
-         * start deleting the oldest files until we are under the
-         * desired size threshold. This *cannot* be parallelized,
-         * as we need to check the size of the cache folder after.
-         */
-        if (MaxSize >= 0)
-        {
-            var files = CacheDirectory.EnumerateFiles().OrderBy(f => f.LastWriteTime);
-            foreach (FileInfo file in files)
-            {
-                if (CacheFileSize - CacheOldFileSize < MaxSize)
-                    break;
-                CacheOldFileSize += file.Length;
-                CacheOldFileQuantity++;
-                file.Delete();
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch (IOException) { } // File is in use, skip it
+                    catch (Exception e)
+                    {
+                        Error("An error occurred while deleting a file");
+                        Error(e.Message);
+                    }
+                });
             }
+
+            /* --- Cache file cleanup by total size threshold ---
+             * If the user has specified a maximum cache size AND
+             * the above operation did not already delete enough files,
+             * start deleting the oldest files until we are under the
+             * desired size threshold. This *cannot* be parallelized,
+             * as we need to check the size of the cache folder after.
+             */
+            if (MaxSize >= 0)
+            {
+                var files = CacheDirectory.EnumerateFiles().OrderBy(f => f.LastWriteTime);
+                foreach (FileInfo file in files)
+                {
+                    if (CacheFileSize - CacheOldFileSize < MaxSize)
+                        break;
+                    
+                    CacheOldFileSize += file.Length;
+                    CacheOldFileQuantity++;
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch (IOException) { } // File is in use, skip it
+                    catch (Exception e)
+                    {
+                        Error("An error occurred while deleting a file");
+                        Error(e.Message);
+                    }
+                }
+            }
+
+            var bTs = BytesToString(CacheFileSize);
+
+            Debug("");
+            Debug("BEGIN CACHE-GET-CLAPPED DIAGNOSTICS:");
+            Debug("");
+            Debug("CACHE FOLDER INFO:");
+            Debug($"Number of unique cached files: {CacheFileQuantity}");
+            Debug($"Size of Resonite cache folder: {bTs}");
+            Debug("");
+            Debug($"Deleted {bTs} files or approximately {Ratio(CacheOldFileQuantity, CacheFileQuantity)}% of the Resonite Cache successfully");
+            Debug("Resonite Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
+            Debug("");
+            Debug("END DIAGNOSTICS");
+            Debug("");
         }
-
-        var bTs = BytesToString(CacheFileSize);
-
-        Debug("");
-        Debug("BEGIN CACHE-GET-CLAPPED DIAGNOSTICS:");
-        Debug("");
-        Debug("CACHE FOLDER INFO:");
-        Debug($"Number of unique cached files: {CacheFileQuantity}");
-        Debug($"Size of Resonite cache folder: {bTs}");
-        Debug("");
-        Debug($"Deleted {bTs} files or approximately {Ratio(CacheOldFileQuantity, CacheFileQuantity)}% of the Resonite Cache successfully");
-        Debug("Resonite Cache is now " + BytesToString(CacheFileSize - CacheOldFileSize));
-        Debug("");
-        Debug("END DIAGNOSTICS");
-        Debug("");
+        catch (IOException) { } // File is in use, skip it
+        catch (Exception e)
+        {
+            Error("An error occurred while deleting a file");
+            Error(e.Message);
+        }
     }
 
 	// https://stackoverflow.com/questions/281640/how-do-i-get-a-human-readable-file-size-in-bytes-abbreviation-using-net
@@ -133,6 +162,32 @@ public class CacheGetClapped : ResoniteMod
         int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
         double num = Math.Round(bytes / Math.Pow(1024, place), 1);
         return (Math.Sign(byteCount) * num).ToString() + suf[place];
+    }
+
+    // https://stackoverflow.com/questions/38913922/c-sharp-check-file-that-used-by-process
+    private static bool IsFileLocked(FileInfo file)
+    {
+        // The file may unavailable because it is:
+        // Still being written to
+        // Or being processed by another thread
+        // Or does not exist (has already been processed)
+
+        FileStream stream = null;
+
+        try
+        {
+            stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+        }
+        catch (UnauthorizedAccessException) { return true; }
+        catch (IOException) { return true; }
+        finally
+        {
+            if (stream != null)
+                stream.Close();
+        }
+
+        // File is not locked
+        return false;
     }
 
     private static string Ratio(long old, long total)
