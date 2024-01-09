@@ -27,7 +27,7 @@ public class CacheGetClapped : ResoniteMod
 
     public override string Name => "CacheGetClapped";
     public override string Author => "dfgHiatus";
-    public override string Version => "2.0.0";
+    public override string Version => "2.0.1";
     public override string Link => "https://github.com/dfgHiatus/CacheGetClapped/";
 
     public override void OnEngineInit()
